@@ -15,7 +15,7 @@ Parameters to fill hardcoded before the launch of that script:
 ## launch
 
 To execute: 
-```
+```bash
 $ python3 alumnforce.py >> output.txt
 ```
 
