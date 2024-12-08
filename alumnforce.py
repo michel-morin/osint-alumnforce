@@ -18,6 +18,8 @@
 # "Diplômé(e) de"
 # "En attente de validation"
 
+import sys
+import time
 import requests
 
 headers = {
@@ -225,24 +227,41 @@ urls = [
 'https://absparis-alumni.com/taglib/sectionupdate/update?updatelist=content:action://addressbook/public-search/search',
 ]
 
+def retry_request(url, headers, data, retries=3, delay=5):
+    """Retry a request with a maximum number of retries."""
+    for attempt in range(retries):
+        try:
+            response = requests.post(url, headers=headers, data=data, timeout=5)
+            response.raise_for_status()  # Raise an exception for HTTP 4xx/5xx status codes
+            return response.json()
+        except requests.RequestException as e:
+            print(f"Request failed for {url}. Attempt {attempt + 1} out of {retries}")
+            if attempt < retries - 1:
+                time.sleep(delay)
+            else:
+                print(f"Abandoning after {retries} attempts for {url}. Error: {e}")
+    return None
+
 i = 0
 y = 0
 for url in urls:
     try:
         print("//////////////////////// log: begin URL request /////")
-        i+=1
+        i += 1
         print(i)
         print(url)
-        response = requests.post(
-            url,
-            headers=headers,
-            data=data,
-        )
-        json = response.json()
-        print(json['content'])
-        y+=1
-        print(y)
-        print(url)
+        json_response = retry_request(url, headers, data)
+        if json_response:
+            try:
+                print(json_response['content'])
+                y += 1
+                print(y)
+                print(url)
+            except KeyError:
+                print(f"'content' key missing in the response for {url}")
         print("//////////////////////// log: next URL request /////")
+    except KeyboardInterrupt:
+        print("\nProcess interrupted by user. Exiting...")
+        sys.exit(0)  # Ensure the program exits cleanly
     except:
         continue
